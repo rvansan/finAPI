@@ -6,6 +6,9 @@ app.use(express.json());
 
 const customers = [];
 
+/************************************************* */
+/* Funções
+/************************************************* */
 function verifyIfExistsAccountCPF(request, response, next) {
     const { cpf } = request.headers;
     const customer = customers.find( customer => customer.cpf === cpf);
@@ -32,8 +35,8 @@ function getBalance(statement) {
 }
 
 /************************************************* */
-
-
+/* Rotas
+/************************************************* */
 app.get('/', (request, response) => {
     return response.json({ok: 'true!'})
 });
@@ -83,23 +86,32 @@ app.post('/withdraw', verifyIfExistsAccountCPF,(request, response) => {
     const { amount } = request.body;
     const { customer } = request;
     const balance = getBalance(customer.statement);
-console.log(balance);
     if(amount > balance) {
         return response
             .status(400)
             .json({error: 'Insufficient funds!'});
     }
-
     const statementOperation = {
         amount,   
         created_at: new Date(),
         type: 'debit'
     }
-
     customer.statement.push(statementOperation);
     return response.status(201).send();
-
-
 });
 
+app.get('/statement/date', verifyIfExistsAccountCPF, (request, response) => {
+    const { customer } = request;
+    const { date } = request.query;
+    const dateFormat = new Date(date + " 00:00");
+
+    const statement = customer.statement.filter( statement => 
+        statement.created_at.toDateString() === new Date(dateFormat).toDateString()
+    );
+
+    return response.status(200).json(statement);
+});
+
+
+/************************************************* */
 app.listen('3333');
